@@ -303,8 +303,9 @@ pattern 6 - payload with duration
 // does not support negative onset yet
 // does not support duration yet
 export const stringifyAnnotation = (opts: StringifyAnnotationOpts) => {
+  const BYTES_PER_SAMPLE = 2;
   let str = `+${opts.dataRecordIdx * opts.duration}${AC20}${AC20}${AC0}`;
-  const maxLength = opts.annotationSignal.samples * 2;
+  const maxLength = opts.annotationSignal.samples * BYTES_PER_SAMPLE;
 
   while (opts.annotations.length > 0) {
     const annotation = opts.annotations[0];
@@ -333,6 +334,7 @@ export const checkAnnotation = (signals: SignalType[]) =>
 export const checkDataRecordDimensions = (
   opts: CheckDataRecordDimensionsOpts
 ) => {
+  const BYTES_PER_SAMPLE = 2;
   const hasAnnotation = checkAnnotation(opts.signals);
   if (opts.dataRecord.length !== opts.signals.length) {
     console.debug(
@@ -360,12 +362,12 @@ export const checkDataRecordDimensions = (
   if (hasAnnotation) {
     if (
       opts.dataRecord[totalChannels].length !==
-      opts.signals[totalChannels].samples * 2
+      opts.signals[totalChannels].samples * BYTES_PER_SAMPLE
     ) {
       console.debug(
         `number of samples in annotation mismatch, ${
           opts.dataRecord[totalChannels].length
-        }, ${opts.signals[totalChannels].samples * 2}`
+        }, ${opts.signals[totalChannels].samples * BYTES_PER_SAMPLE}`
       );
       return false;
     }

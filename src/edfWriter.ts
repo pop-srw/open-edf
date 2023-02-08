@@ -39,7 +39,7 @@ type EdfHeaderType = {
   signals: SignalType[];
 };
 
-type EdfWriterConstructorParams = {
+type RawEdfWriterConstructorParams = {
   version: string;
   patient?: {
     code?: string;
@@ -62,6 +62,99 @@ type EdfWriterConstructorParams = {
   signals: SignalType[];
 };
 
+type EdfWriterConstructorParams = {
+  fileType: "edf";
+  patient?: {
+    code?: string;
+    gender?: "male" | "female";
+    birthDate?: Date;
+    name?: string;
+    additional?: string;
+  };
+  recording?: {
+    startDate?: Date;
+    administrationCode?: string;
+    technicianCode?: string;
+    equipmentCode?: string;
+    additional?: string;
+  };
+  startDateTime: Date;
+  reserved?: string;
+  duration: number;
+  signals: SignalType[];
+};
+
+type EdfPlusWriterConstructorParams = {
+  fileType: "edf+";
+  patient?: {
+    code?: string;
+    gender?: "male" | "female";
+    birthDate?: Date;
+    name?: string;
+    additional?: string;
+  };
+  recording?: {
+    startDate?: Date;
+    administrationCode?: string;
+    technicianCode?: string;
+    equipmentCode?: string;
+    additional?: string;
+  };
+  startDateTime: Date;
+  reserved?: "EDF+C" | "EDF+D";
+  duration: number;
+  signals: SignalType[];
+};
+
+type BdfWriterConstructorParams = {
+  fileType: "bdf";
+  patient?: {
+    code?: string;
+    gender?: "male" | "female";
+    birthDate?: Date;
+    name?: string;
+    additional?: string;
+  };
+  recording?: {
+    startDate?: Date;
+    administrationCode?: string;
+    technicianCode?: string;
+    equipmentCode?: string;
+    additional?: string;
+  };
+  startDateTime: Date;
+  duration: number;
+  signals: SignalType[];
+};
+
+type BdfPlusWriterConstructorParams = {
+  fileType: "bdf+";
+  patient?: {
+    code?: string;
+    gender?: "male" | "female";
+    birthDate?: Date;
+    name?: string;
+    additional?: string;
+  };
+  recording?: {
+    startDate?: Date;
+    administrationCode?: string;
+    technicianCode?: string;
+    equipmentCode?: string;
+    additional?: string;
+  };
+  startDateTime: Date;
+  reserved?: "BDF+C" | "BDF+D";
+  duration: number;
+  signals: SignalType[];
+};
+
+type WriterConstructorParams =
+  | EdfWriterConstructorParams
+  | EdfPlusWriterConstructorParams
+  | BdfWriterConstructorParams
+  | BdfPlusWriterConstructorParams;
+
 export class EdfWriter extends Writable {
   filePath: string;
 
@@ -72,24 +165,66 @@ export class EdfWriter extends Writable {
   header!: EdfHeaderType;
   hasAnnotation: boolean = false;
 
-  constructor(options: {
-    filePath: string;
-    params: EdfWriterConstructorParams;
-  }) {
+  constructor(options: { filePath: string; params: WriterConstructorParams }) {
     super({
       objectMode: true,
     });
 
     this.filePath = options.filePath;
-    this.header = {
-      ...options.params,
-      patient: {
-        ...options.params.patient,
-      },
-      recording: {
-        ...options.params.recording,
-      },
-    };
+
+    if (options.params.fileType === "edf") {
+      this.header = {
+        version: "0",
+        nRecords: 0,
+        reserved: options.params.reserved ?? "",
+        ...options.params,
+        patient: {
+          ...options.params.patient,
+        },
+        recording: {
+          ...options.params.recording,
+        },
+      };
+    } else if (options.params.fileType === "edf+") {
+      this.header = {
+        version: "0",
+        nRecords: 0,
+        reserved: options.params.reserved ?? "EDF+C",
+        ...options.params,
+        patient: {
+          ...options.params.patient,
+        },
+        recording: {
+          ...options.params.recording,
+        },
+      };
+    } else if (options.params.fileType === "bdf") {
+      this.header = {
+        version: "\u00ffBIOSEMI",
+        nRecords: 0,
+        reserved: "24BIT",
+        ...options.params,
+        patient: {
+          ...options.params.patient,
+        },
+        recording: {
+          ...options.params.recording,
+        },
+      };
+    } else if (options.params.fileType === "bdf+") {
+      this.header = {
+        version: "\u00ffBIOSEMI",
+        nRecords: 0,
+        reserved: options.params.reserved ?? "BDF+C",
+        ...options.params,
+        patient: {
+          ...options.params.patient,
+        },
+        recording: {
+          ...options.params.recording,
+        },
+      };
+    }
 
     /* write header */
     this.headerBuffer = encodeHeader({
