@@ -64,7 +64,7 @@ export const getVersionString: (header: EdfHeaderType) => string = (
 export const getPatientString: (header: EdfHeaderType) => string = (
   header: EdfHeaderType
 ) => {
-  const code = header.patient?.code ?? "X";
+  const code = header.patient?.code || "X";
   const birthDate = header.patient?.birthDate
     ? format(header.patient?.birthDate, "dd-MMM-yyyy").toUpperCase()
     : "X";
@@ -74,10 +74,13 @@ export const getPatientString: (header: EdfHeaderType) => string = (
       : header.patient?.gender === "female"
       ? "F"
       : "X";
-  const name = header.patient?.name ?? "X";
-  const additional = header.patient?.additional ?? "";
+  const name = header.patient?.name || "X";
+  const additional = header.patient?.additional || "";
 
-  return [code, gender, birthDate, name, additional].join(" ");
+  const l = [code, gender, birthDate, name];
+  if (additional) l.push(additional);
+
+  return l.join(" ");
 };
 
 export const getRecordingString: (header: EdfHeaderType) => string = (
@@ -86,10 +89,10 @@ export const getRecordingString: (header: EdfHeaderType) => string = (
   const startDate = header.recording?.startDate
     ? format(header.recording?.startDate, "dd-MMM-yyyy").toUpperCase()
     : "X";
-  const administrationCode = header.recording?.administrationCode ?? "X";
-  const technicianCode = header.recording?.technicianCode ?? "X";
-  const equipmentCode = header.recording?.equipmentCode ?? "X";
-  const additional = header.recording?.additional ?? "";
+  const administrationCode = header.recording?.administrationCode || "X";
+  const technicianCode = header.recording?.technicianCode || "X";
+  const equipmentCode = header.recording?.equipmentCode || "X";
+  const additional = header.recording?.additional || "";
 
   return [
     "Startdate",
@@ -139,8 +142,6 @@ export const getSignalsString: (header: EdfHeaderType) => string = (
   return header.signals.length.toString();
 };
 
-const HEADER_ATTRIBUTES = [];
-
 type EdfHeaderType = {
   version: string;
   patient: PatientType;
@@ -179,8 +180,8 @@ export const encodeHeader = (opts: EncodeHeaderOpts) => {
   buf.subarray(0, 8).set(Buffer.from(opts.version).subarray(0, 8));
   buf.subarray(8, 88).set(Buffer.from(opts.patient).subarray(0, 80));
   buf.subarray(88, 168).set(Buffer.from(opts.recording).subarray(0, 80));
-  buf.subarray(168, 184).set(Buffer.from(opts.headerBytes).subarray(0, 16));
-  buf.subarray(184, 192).set(Buffer.from(opts.startDateTime).subarray(0, 8));
+  buf.subarray(168, 184).set(Buffer.from(opts.startDateTime).subarray(0, 16));
+  buf.subarray(184, 192).set(Buffer.from(opts.headerBytes).subarray(0, 8));
   buf.subarray(192, 236).set(Buffer.from(opts.reserved).subarray(0, 44));
   buf.subarray(236, 244).set(Buffer.from(opts.nRecords).subarray(0, 8));
   buf.subarray(244, 252).set(Buffer.from(opts.duration).subarray(0, 8));
@@ -249,6 +250,7 @@ export const encodeSignalHeader = (opts: EncodeSignalHeaderOpts) => {
 };
 
 export const encodeDataRecord = (opts: EncodeDataRecordOpts) => {
+  const BYTES_PER_SAMPLE = 2;
   const bufs: Buffer[] = [];
   for (let ch = 0; ch < opts.dataRecord.length; ch++) {
     /* check has annotation and last channel */
@@ -257,8 +259,13 @@ export const encodeDataRecord = (opts: EncodeDataRecordOpts) => {
       bufs.push(tmp);
       continue;
     }
-    const tmp = Buffer.from(Int16Array.from(opts.dataRecord[ch]).buffer);
-    bufs.push(tmp);
+    const chIntArray = Int32Array.from(opts.dataRecord[ch]);
+    for (let s = 0; s < opts.dataRecord[ch].length; s++) {
+      const tmp = Buffer.from(
+        chIntArray.buffer.slice(s * 4, s * 4 + BYTES_PER_SAMPLE)
+      );
+      bufs.push(tmp);
+    }
   }
   return Buffer.concat(bufs);
 };
