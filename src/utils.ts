@@ -259,13 +259,16 @@ export const encodeDataRecord = (opts: EncodeDataRecordOpts) => {
       bufs.push(tmp);
       continue;
     }
-    const chIntArray = Int32Array.from(opts.dataRecord[ch]);
-    for (let s = 0; s < opts.dataRecord[ch].length; s++) {
-      const tmp = Buffer.from(
-        chIntArray.buffer.slice(s * 4, s * 4 + BYTES_PER_SAMPLE)
-      );
-      bufs.push(tmp);
-    }
+    // const chIntArray = Int32Array.from(opts.dataRecord[ch]);
+    // for (let s = 0; s < opts.dataRecord[ch].length; s++) {
+    //   const tmp = Buffer.from(
+    //     chIntArray.buffer.slice(s * 4, s * 4 + BYTES_PER_SAMPLE)
+    //   );
+    //   bufs.push(tmp);
+    // }
+
+    const tmp = Buffer.from(Int16Array.from(opts.dataRecord[ch]).buffer);
+    bufs.push(tmp);
   }
   return Buffer.concat(bufs);
 };
