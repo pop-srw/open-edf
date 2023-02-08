@@ -1,2 +1,1 @@
-export * from "./utils";
-export * from "./edfWriter";
+export { EdfWriter } from "./edfWriter";
