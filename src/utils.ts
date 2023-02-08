@@ -48,6 +48,7 @@ type EncodeSignalHeaderOpts = {
 type EncodeDataRecordOpts = {
   dataRecord: number[][];
   hasAnnotation: boolean;
+  bytesPerSample?: 2 | 3;
 };
 
 type CheckDataRecordDimensionsOpts = {
@@ -250,7 +251,9 @@ export const encodeSignalHeader = (opts: EncodeSignalHeaderOpts) => {
 };
 
 export const encodeDataRecord = (opts: EncodeDataRecordOpts) => {
-  const BYTES_PER_SAMPLE = 2;
+  const BYTES_PER_SAMPLE = opts.bytesPerSample ?? 2;
+  const SHIFT_BYTES = 4 - BYTES_PER_SAMPLE;
+  const MULTIPLIER = 256 ** SHIFT_BYTES;
   const bufs: Buffer[] = [];
   for (let ch = 0; ch < opts.dataRecord.length; ch++) {
     /* check has annotation and last channel */
@@ -259,16 +262,20 @@ export const encodeDataRecord = (opts: EncodeDataRecordOpts) => {
       bufs.push(tmp);
       continue;
     }
-    // const chIntArray = Int32Array.from(opts.dataRecord[ch]);
-    // for (let s = 0; s < opts.dataRecord[ch].length; s++) {
-    //   const tmp = Buffer.from(
-    //     chIntArray.buffer.slice(s * 4, s * 4 + BYTES_PER_SAMPLE)
-    //   );
-    //   bufs.push(tmp);
-    // }
 
-    const tmp = Buffer.from(Int16Array.from(opts.dataRecord[ch]).buffer);
-    bufs.push(tmp);
+    for (let i = 0; i < opts.dataRecord[ch].length; i++) {
+      opts.dataRecord[ch][i] *= MULTIPLIER;
+    }
+    const chIntArray = Int32Array.from(opts.dataRecord[ch]);
+    for (let s = 0; s < opts.dataRecord[ch].length; s++) {
+      const tmp = Buffer.from(
+        chIntArray.buffer.slice(s * 4 + SHIFT_BYTES, s * 4 + 4)
+      );
+      bufs.push(tmp);
+    }
+
+    // const tmp = Buffer.from(Int16Array.from(opts.dataRecord[ch]).buffer);
+    // bufs.push(tmp);
   }
   return Buffer.concat(bufs);
 };
