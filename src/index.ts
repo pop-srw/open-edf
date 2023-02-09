@@ -4,5 +4,5 @@ export {
   checkDataRecordDimensions,
   checkAnnotation,
 } from "./dataRecord";
-export {} from "./annotation";
+export { encodeAnnotation, stringifyAnnotation } from "./annotation";
 export { EdfWriter } from "./edfWriter";
