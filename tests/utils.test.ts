@@ -7,9 +7,7 @@ import {
 describe("test edf writer utils", () => {
   test("get version string", () => {
     expect(getVersionString({ version: "0" } as any)).toBe("0");
-    expect(getVersionString({ version: "\u00ffBIOSEMI" } as any)).toBe(
-      "\u00ffBIOSEMI"
-    );
+    expect(getVersionString({ version: ".BIOSEMI" } as any)).toBe(".BIOSEMI");
   });
 
   test("get version string", () => {

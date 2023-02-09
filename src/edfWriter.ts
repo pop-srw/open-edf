@@ -127,7 +127,7 @@ export class EdfWriter extends Writable {
 
   header!: EdfHeaderType;
   hasAnnotation: boolean = false;
-  bytePerSamples: 2 | 3 = 2;
+  bytesPerSample: 2 | 3 = 2;
 
   constructor(options: { filePath: string; params: WriterConstructorParams }) {
     super({
@@ -149,7 +149,7 @@ export class EdfWriter extends Writable {
           ...options.params.recording,
         },
       };
-      this.bytePerSamples = 2;
+      this.bytesPerSample = 2;
     } else if (options.params.fileType === "edf+") {
       this.header = {
         version: "0",
@@ -163,7 +163,7 @@ export class EdfWriter extends Writable {
           ...options.params.recording,
         },
       };
-      this.bytePerSamples = 2;
+      this.bytesPerSample = 2;
     } else if (options.params.fileType === "bdf") {
       this.header = {
         version: ".BIOSEMI",
@@ -177,7 +177,7 @@ export class EdfWriter extends Writable {
           ...options.params.recording,
         },
       };
-      this.bytePerSamples = 3;
+      this.bytesPerSample = 3;
     } else if (options.params.fileType === "bdf+") {
       this.header = {
         version: ".BIOSEMI",
@@ -191,7 +191,7 @@ export class EdfWriter extends Writable {
           ...options.params.recording,
         },
       };
-      this.bytePerSamples = 3;
+      this.bytesPerSample = 3;
     }
 
     /* write header */
@@ -247,7 +247,7 @@ export class EdfWriter extends Writable {
     const buf = encodeDataRecord({
       dataRecord: dataRecord,
       hasAnnotation: this.hasAnnotation,
-      bytesPerSample: this.bytePerSamples,
+      bytesPerSample: this.bytesPerSample,
     });
     fs.writeSync(this.fd, buf);
 
