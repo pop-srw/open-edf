@@ -1,4 +1,8 @@
-import { getPatientString, getVersionString } from "../src/utils";
+import {
+  getPatientString,
+  getStartDateTimeString,
+  getVersionString,
+} from "../src/utils";
 
 describe("test edf writer utils", () => {
   test("get version string", () => {
@@ -158,5 +162,11 @@ describe("test edf writer utils", () => {
     expect(getPatientString({} as any)).toBe("X X X X");
   });
 
-  test("get recording string", () => {});
+  test("get recording string", () => {
+    expect(
+      getStartDateTimeString({
+        startDateTime: new Date(2023, 1, 5, 16, 15, 10),
+      } as any)
+    ).toBe("05.02.2316.15.10");
+  });
 });

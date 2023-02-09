@@ -28,6 +28,10 @@ export const encodeHeader = (opts: EncodeHeaderOpts) => {
   buf.subarray(236, 244).set(Buffer.from(opts.nRecords).subarray(0, 8));
   buf.subarray(244, 252).set(Buffer.from(opts.duration).subarray(0, 8));
   buf.subarray(252, 256).set(Buffer.from(opts.signals).subarray(0, 4));
+
+  if (opts.version.indexOf("BIOSEMI") > 0) {
+    buf.subarray(0, 1).set(Buffer.from([0xff]));
+  }
   return buf;
 };
 
