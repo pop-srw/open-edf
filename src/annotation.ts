@@ -16,6 +16,15 @@ type StringifyAnnotationOpts = {
   dataRecordIdx: number;
   duration: number;
   annotationSignal: SignalType;
+  bytesPerSample: 2 | 3;
+};
+
+type EncodeAnnotationOpts = {
+  annotations: AnnotationType[];
+  dataRecordIdx: number;
+  duration: number;
+  annotationSignal: SignalType;
+  bytesPerSample: 2 | 3;
 };
 
 /*
@@ -40,7 +49,7 @@ pattern 6 - payload with duration
 // does not support negative onset yet
 // does not support duration yet
 export const stringifyAnnotation = (opts: StringifyAnnotationOpts) => {
-  const BYTES_PER_SAMPLE = 2;
+  const BYTES_PER_SAMPLE = opts.bytesPerSample ?? 2;
   let str = `+${opts.dataRecordIdx * opts.duration}${AC20}${AC20}${AC0}`;
   const maxLength = opts.annotationSignal.samples * BYTES_PER_SAMPLE;
 
@@ -57,4 +66,14 @@ export const stringifyAnnotation = (opts: StringifyAnnotationOpts) => {
     opts.annotations.shift();
   }
   return str;
+};
+
+export const encodeAnnotation = (opts: EncodeAnnotationOpts) => {
+  const BYTES_PER_SAMPLE = opts.bytesPerSample ?? 2;
+  return Buffer.from(
+    stringifyAnnotation(opts).padEnd(
+      opts.annotationSignal.samples * BYTES_PER_SAMPLE,
+      "\0"
+    )
+  );
 };
