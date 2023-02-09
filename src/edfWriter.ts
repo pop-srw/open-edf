@@ -1,10 +1,9 @@
 import * as fs from "fs";
 import { Writable } from "stream";
+import { checkDataRecordDimensions, encodeDataRecord } from "./dataRecord";
+import { encodeHeader, encodeSignalHeader } from "./header";
+import { PatientType, RecordingType, SignalType } from "./type";
 import {
-  checkDataRecordDimensions,
-  encodeDataRecord,
-  encodeHeader,
-  encodeSignalHeader,
   getDurationString,
   getHeaderBytesString,
   getPatientString,
@@ -13,9 +12,6 @@ import {
   getReservedString,
   getSignalsString,
   getStartDateTimeString,
-  PatientType,
-  RecordingType,
-  SignalType,
 } from "./utils";
 
 type EdfHeaderType = {

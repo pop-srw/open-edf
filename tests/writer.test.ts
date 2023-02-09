@@ -1,5 +1,4 @@
-import { EdfWriter } from "../src/index";
-import { stringifyAnnotation, AnnotationType } from "../src/utils";
+import { EdfWriter } from "../src/edfWriter";
 
 describe("test edf writer", () => {
   test("write", (done) => {

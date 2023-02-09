@@ -1,4 +1,4 @@
-import { encodeDataRecord } from "../src/utils";
+import { encodeDataRecord } from "../src/dataRecord";
 
 describe("test edf writer utils", () => {
   test("encode edf data record gives correct bytes", () => {
