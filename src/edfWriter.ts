@@ -25,29 +25,6 @@ type EdfHeaderType = {
   signals: SignalType[];
 };
 
-type RawEdfWriterConstructorParams = {
-  version: string;
-  patient?: {
-    code?: string;
-    gender?: "male" | "female";
-    birthDate?: Date;
-    name?: string;
-    additional?: string;
-  };
-  recording?: {
-    startDate?: Date;
-    administrationCode?: string;
-    technicianCode?: string;
-    equipmentCode?: string;
-    additional?: string;
-  };
-  startDateTime: Date;
-  reserved: string;
-  nRecords: number;
-  duration: number;
-  signals: SignalType[];
-};
-
 type EdfWriterConstructorParams = {
   fileType: "edf";
   patient?: {
@@ -150,6 +127,7 @@ export class EdfWriter extends Writable {
 
   header!: EdfHeaderType;
   hasAnnotation: boolean = false;
+  bytePerSamples: 2 | 3 = 2;
 
   constructor(options: { filePath: string; params: WriterConstructorParams }) {
     super({
@@ -171,6 +149,7 @@ export class EdfWriter extends Writable {
           ...options.params.recording,
         },
       };
+      this.bytePerSamples = 2;
     } else if (options.params.fileType === "edf+") {
       this.header = {
         version: "0",
@@ -184,9 +163,10 @@ export class EdfWriter extends Writable {
           ...options.params.recording,
         },
       };
+      this.bytePerSamples = 2;
     } else if (options.params.fileType === "bdf") {
       this.header = {
-        version: "\u00ffBIOSEMI",
+        version: ".BIOSEMI",
         nRecords: 0,
         reserved: "24BIT",
         ...options.params,
@@ -197,9 +177,10 @@ export class EdfWriter extends Writable {
           ...options.params.recording,
         },
       };
+      this.bytePerSamples = 3;
     } else if (options.params.fileType === "bdf+") {
       this.header = {
-        version: "\u00ffBIOSEMI",
+        version: ".BIOSEMI",
         nRecords: 0,
         reserved: options.params.reserved ?? "BDF+C",
         ...options.params,
@@ -210,6 +191,7 @@ export class EdfWriter extends Writable {
           ...options.params.recording,
         },
       };
+      this.bytePerSamples = 3;
     }
 
     /* write header */
@@ -265,6 +247,7 @@ export class EdfWriter extends Writable {
     const buf = encodeDataRecord({
       dataRecord: dataRecord,
       hasAnnotation: this.hasAnnotation,
+      bytesPerSample: this.bytePerSamples,
     });
     fs.writeSync(this.fd, buf);
 
@@ -280,8 +263,8 @@ export class EdfWriter extends Writable {
       version: this.header.version,
       patient: getPatientString(this.header),
       recording: getRecordingString(this.header),
-      headerBytes: getStartDateTimeString(this.header),
-      startDateTime: getHeaderBytesString(this.header),
+      headerBytes: getHeaderBytesString(this.header),
+      startDateTime: getStartDateTimeString(this.header),
       reserved: getReservedString(this.header),
       nRecords: getRecordsString(this.header),
       duration: getDurationString(this.header),
