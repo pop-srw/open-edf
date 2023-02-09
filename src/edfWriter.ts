@@ -1,13 +1,3 @@
-import format from "date-fns/format";
-
-import {
-  closeSync,
-  createWriteStream,
-  fstat,
-  openSync,
-  WriteStream,
-  writeSync,
-} from "fs";
 import * as fs from "fs";
 import { Writable } from "stream";
 import {
