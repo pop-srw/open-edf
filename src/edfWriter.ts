@@ -1,5 +1,6 @@
 import * as fs from "fs";
 import { Writable } from "stream";
+import { AnnotationType, encodeAnnotation } from "./annotation";
 import { checkDataRecordDimensions, encodeDataRecord } from "./dataRecord";
 import { encodeHeader, encodeSignalHeader } from "./header";
 import { PatientType, RecordingType, SignalType } from "./type";
@@ -118,6 +119,24 @@ type WriterConstructorParams =
   | BdfWriterConstructorParams
   | BdfPlusWriterConstructorParams;
 
+type ArrayChunktype = number[][];
+
+type CombinedChunkType = {
+  type: "combined";
+  data: number[][];
+};
+
+type SeparatedChunkType = {
+  type: "separated";
+  data: number[][];
+  annotations: AnnotationType[];
+};
+
+export type EdfWriterChunkType =
+  | ArrayChunktype
+  | CombinedChunkType
+  | SeparatedChunkType;
+
 export class EdfWriter extends Writable {
   filePath: string;
 
@@ -228,36 +247,97 @@ export class EdfWriter extends Writable {
   }
 
   _write(
-    chunk: any,
+    chunk: EdfWriterChunkType,
     encoding: BufferEncoding,
     callback: (error?: Error | null | undefined) => void
   ): void {
-    console.log("debug:", chunk);
-    const dataRecord = chunk;
+    // console.log("debug:", chunk);
+    /* combined ordinary and annotation signals */
+    if (Array.isArray(chunk)) {
+      const dataRecord = chunk;
+      if (
+        checkDataRecordDimensions({
+          signals: this.header.signals,
+          dataRecord: dataRecord,
+        }) == false
+      ) {
+        callback(new Error("mismatch data record dimension"));
+      }
 
-    if (
-      checkDataRecordDimensions({
-        signals: this.header.signals,
+      const buf = encodeDataRecord({
         dataRecord: dataRecord,
-      }) == false
-    ) {
-      callback(new Error("mismatch data record dimension"));
+        hasAnnotation: this.hasAnnotation,
+        bytesPerSample: this.bytesPerSample,
+      });
+      fs.writeSync(this.fd, buf);
+
+      /* add counter */
+      this.header.nRecords += 1;
+      callback();
+    } else if (chunk.type == "combined") {
+      const dataRecord = chunk.data;
+      if (
+        checkDataRecordDimensions({
+          signals: this.header.signals,
+          dataRecord: dataRecord,
+        }) == false
+      ) {
+        callback(new Error("mismatch data record dimension"));
+      }
+
+      const buf = encodeDataRecord({
+        dataRecord: dataRecord,
+        hasAnnotation: this.hasAnnotation,
+        bytesPerSample: this.bytesPerSample,
+      });
+      fs.writeSync(this.fd, buf);
+
+      /* add counter */
+      this.header.nRecords += 1;
+      callback();
+
+      /* separated ordination signals and annotation signal */
+    } else if (chunk.type == "separated") {
+      const ordinaryDataRecord = chunk.data;
+      const annotationDataRecord = chunk.annotations;
+
+      if (
+        checkDataRecordDimensions({
+          signals: this.header.signals.slice(0, -1),
+          dataRecord: ordinaryDataRecord,
+        }) == false
+      ) {
+        callback(new Error("mismatch data record dimension"));
+      }
+
+      const buf = encodeDataRecord({
+        /* combine ordinary and annotation */
+        dataRecord: [
+          ...ordinaryDataRecord,
+          Array.from(
+            encodeAnnotation({
+              annotations: annotationDataRecord,
+              dataRecordIdx: 0,
+              annotationSignal:
+                this.header.signals[this.header.signals.length - 1],
+              duration: this.header.duration,
+              bytesPerSample: this.bytesPerSample,
+            })
+          ),
+        ],
+        hasAnnotation: this.hasAnnotation,
+        bytesPerSample: this.bytesPerSample,
+      });
+      fs.writeSync(this.fd, buf);
+
+      /* add counter */
+      this.header.nRecords += 1;
+      callback();
     }
-
-    const buf = encodeDataRecord({
-      dataRecord: dataRecord,
-      hasAnnotation: this.hasAnnotation,
-      bytesPerSample: this.bytesPerSample,
-    });
-    fs.writeSync(this.fd, buf);
-
-    /* add counter */
-    this.header.nRecords += 1;
-    callback();
   }
 
   _final(callback: (error?: Error | null) => void) {
-    console.log("_final");
+    // console.log("_final");
     /* update header in file */
     this.headerBuffer = encodeHeader({
       version: this.header.version,

@@ -5,4 +5,4 @@ export {
   checkAnnotation,
 } from "./dataRecord";
 export { encodeAnnotation, stringifyAnnotation } from "./annotation";
-export { EdfWriter } from "./edfWriter";
+export { EdfWriter, EdfWriterChunkType } from "./edfWriter";
