@@ -317,7 +317,7 @@ export class EdfWriter extends Writable {
           Array.from(
             encodeAnnotation({
               annotations: annotationDataRecord,
-              dataRecordIdx: 0,
+              dataRecordIdx: this.header.nRecords,
               annotationSignal:
                 this.header.signals[this.header.signals.length - 1],
               duration: this.header.duration,
